@@ -28,6 +28,6 @@ class _NewMailHandler(FileSystemEventHandler):
 
 def start_watcher(maildir: str, callback: Callable[[Path], None]) -> Observer:
     observer = Observer()
-    observer.schedule(_NewMailHandler(maildir, callback), maildir, recursive=False)
+    observer.schedule(_NewMailHandler(maildir, callback), maildir, recursive=True)
     observer.start()
     return observer

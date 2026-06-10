@@ -1,8 +1,8 @@
-import time, shutil
+import time
 from pathlib import Path
 import pytest
-from watchdog.events import FileCreatedEvent
-from digestor.watcher import start_watcher, _NewMailHandler
+from digestor.watcher import start_watcher
+
 
 def test_watcher_fires_on_new_file(tmp_path):
     maildir = tmp_path / "maildir"
@@ -11,17 +11,22 @@ def test_watcher_fires_on_new_file(tmp_path):
     (maildir / "tmp").mkdir()
 
     seen = []
-    handler = _NewMailHandler(str(maildir), lambda p: seen.append(p))
+    observer = start_watcher(str(maildir), lambda p: seen.append(p))
 
-    eml = maildir / "new" / "test.eml"
-    eml.write_text("Subject: Test\r\n\r\nBody")
+    try:
+        eml = maildir / "new" / "test.eml"
+        eml.write_text("Subject: Test\r\n\r\nBody")
+        # give watchdog time to fire
+        for _ in range(50):
+            if seen:
+                break
+            time.sleep(0.1)
+        assert len(seen) == 1
+        assert seen[0] == eml
+    finally:
+        observer.stop()
+        observer.join()
 
-    # Manually trigger the event (watchdog may not work in test env)
-    event = FileCreatedEvent(str(eml))
-    handler.on_created(event)
-
-    assert len(seen) == 1
-    assert seen[0] == eml
 
 def test_watcher_ignores_non_new_dir(tmp_path):
     maildir = tmp_path / "maildir"
@@ -30,13 +35,12 @@ def test_watcher_ignores_non_new_dir(tmp_path):
     (maildir / "tmp").mkdir()
 
     seen = []
-    handler = _NewMailHandler(str(maildir), lambda p: seen.append(p))
+    observer = start_watcher(str(maildir), lambda p: seen.append(p))
 
-    old_file = maildir / "cur" / "old.eml"
-    old_file.write_text("old mail")
-
-    # Manually trigger the event
-    event = FileCreatedEvent(str(old_file))
-    handler.on_created(event)
-
-    assert len(seen) == 0
+    try:
+        (maildir / "cur" / "old.eml").write_text("old mail")
+        time.sleep(0.5)
+        assert len(seen) == 0
+    finally:
+        observer.stop()
+        observer.join()
