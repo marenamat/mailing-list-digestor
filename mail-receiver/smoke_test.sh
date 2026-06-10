@@ -2,6 +2,7 @@
 set -euo pipefail
 
 RECIPIENT="smoketest@mail-receiver.test"
+export RECIPIENT
 TMPDIR="$(mktemp -d)"
 trap 'podman rm -f mr-smoke 2>/dev/null; rm -rf "${TMPDIR}"' EXIT
 
@@ -18,7 +19,7 @@ podman run -d --name mr-smoke \
     mail-receiver:local
 
 echo "==> Waiting for Postfix to start"
-for i in $(seq 1 10); do
+for i in $(seq 1 60); do
     nc -z 127.0.0.1 12525 2>/dev/null && break
     sleep 0.5
 done
@@ -26,7 +27,7 @@ nc -z 127.0.0.1 12525 || { echo "FAIL: Postfix did not bind"; exit 1; }
 
 echo "==> Sending test message"
 python3 - <<'EOF'
-import smtplib, os, sys
+import smtplib, os
 recipient = os.environ.get("RECIPIENT", "smoketest@mail-receiver.test")
 with smtplib.SMTP("127.0.0.1", 12525, timeout=10) as s:
     code, _ = s.ehlo("test.local")
@@ -41,10 +42,12 @@ print("SMTP accepted the message")
 EOF
 
 echo "==> Waiting for delivery"
-sleep 1
-
-echo "==> Checking Maildir"
-COUNT=$(ls "${TMPDIR}/maildir/new/" 2>/dev/null | wc -l)
+COUNT=0
+for i in $(seq 1 25); do
+    COUNT=$(ls "${TMPDIR}/maildir/new/" 2>/dev/null | wc -l)
+    [ "${COUNT}" -ge 1 ] && break
+    sleep 0.2
+done
 echo "    Messages in new/: ${COUNT}"
 [ "${COUNT}" -eq 1 ] || { echo "FAIL: expected 1 message, got ${COUNT}"; exit 1; }
 
