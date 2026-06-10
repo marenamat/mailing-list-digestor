@@ -1,0 +1,25 @@
+# Runtime values injected by entrypoint.sh via `postconf -e`:
+#   myhostname, virtual_mailbox_domains, virtual_mailbox_base,
+#   virtual_uid_maps, virtual_gid_maps
+
+# Disable local account delivery and outbound relay entirely
+mydestination =
+local_transport = error: local delivery disabled
+relay_domains =
+default_transport = error: outbound relay disabled
+
+# Listen on all interfaces, IPv4 only (IPv6 not needed in the compose network)
+inet_interfaces = all
+inet_protocols = ipv4
+
+# Virtual mailbox delivery (path and map populated at runtime)
+virtual_transport = virtual
+virtual_mailbox_maps = hash:/etc/postfix/virtual_mailboxes
+
+# Log to stdout — requires Postfix 3.4+; Alpine 3.19 ships 3.7
+maillog_file = /dev/stdout
+
+# Minimal banner; no biff, no domain appending
+smtpd_banner = $myhostname ESMTP
+biff = no
+append_dot_mydomain = no
