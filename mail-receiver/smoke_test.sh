@@ -56,9 +56,11 @@ python3 - <<'EOF'
 import smtplib
 with smtplib.SMTP("127.0.0.1", 12525, timeout=10) as s:
     s.ehlo("test.local")
+    s.mail("sender@test.local")
     code, _ = s.rcpt("nobody@other.domain")
-    assert code == 550, f"Expected 550 for unknown recipient, got {code}"
-print("Unknown recipient correctly rejected with 550")
+    # Postfix returns 554 (relay access denied) for an unknown domain
+    assert code == 554, f"Expected 554 for unknown recipient domain, got {code}"
+print("Unknown recipient domain correctly rejected with 554")
 EOF
 
 echo ""
