@@ -1,0 +1,9 @@
+# Runtime secrets — copy .env.example and fill in
+.env
+
+# Runtime config — copy config/*.example files and fill in
+config/context.md
+config/lists.yaml
+
+# Container build artifacts
+mail-receiver/target/
