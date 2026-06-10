@@ -1,0 +1,14 @@
+From: alice@example.com
+To: quic@ietf.org
+Subject: Re: QUIC multipath latest revision
+Message-ID: <sample-001@example.com>
+Date: Wed, 11 Jun 2026 08:00:00 +0200
+In-Reply-To: <original-001@example.com>
+References: <original-001@example.com>
+List-Id: QUIC Working Group <quic.ietf.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+I reviewed draft-ietf-quic-multipath-12 and have comments on section 4.
+
+The proposed path identifier encoding seems efficient but needs clarification.
