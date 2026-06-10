@@ -1,0 +1,18 @@
+# Maps mailing-list addresses to working group names.
+# The digestor uses this to group emails in the daily digest.
+# Copy to config/lists.yaml and adjust for your subscriptions.
+
+working_groups:
+  QUIC:
+    - quic@ietf.org
+    - quic-issues@ietf.org
+  TLS:
+    - tls@ietf.org
+  HTTPBIS:
+    - ietf-http-wg@w3.org
+    - httpbis@ietf.org
+  WEBTRANS:
+    - webtransport@ietf.org
+  General:
+    - ietf-announce@ietf.org
+    - ietf@ietf.org

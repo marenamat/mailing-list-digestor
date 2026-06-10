@@ -1,0 +1,19 @@
+# Digestor Context
+
+This file tells the digestor what topics matter to you.
+Mount it at /config/context.md in the digestor container.
+Edit freely — the digestor re-reads it on each processing cycle.
+
+## My interests
+
+I am an IETF participant focused on transport protocols. I care about:
+
+- Protocol design discussions in QUIC, TLS, HTTPBIS, WEBTRANS
+- Calls for adoption and working group last calls in my WGs
+- Interim meeting announcements
+- Documents entering IETF last call
+
+I am less interested in:
+
+- Administrative threads unrelated to my working groups
+- Off-topic or social content
