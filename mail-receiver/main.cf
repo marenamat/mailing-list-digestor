@@ -12,6 +12,9 @@ default_transport = error: outbound relay disabled
 inet_interfaces = all
 inet_protocols = ipv4
 
+# Only loopback is trusted for relay — prevents other containers from relaying
+mynetworks = 127.0.0.0/8
+
 # Virtual mailbox delivery (path and map populated at runtime)
 virtual_transport = virtual
 virtual_mailbox_maps = hash:/etc/postfix/virtual_mailboxes
