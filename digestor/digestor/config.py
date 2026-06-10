@@ -28,13 +28,17 @@ class Config:
 
     def load_context(self) -> str:
         try:
-            return open(self.context_path).read()
+            with open(self.context_path) as f:
+                return f.read()
         except FileNotFoundError:
             return ""
 
     def load_lists(self) -> dict[str, list[str]]:
         try:
-            data = yaml.safe_load(open(self.lists_path))
+            with open(self.lists_path) as f:
+                data = yaml.safe_load(f)
+            if not isinstance(data, dict):
+                return {}
             return data.get("working_groups", {})
-        except FileNotFoundError:
+        except (FileNotFoundError, yaml.YAMLError):
             return {}
