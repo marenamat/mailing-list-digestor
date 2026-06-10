@@ -1,0 +1,9 @@
+pyproject.toml
+digestor/__init__.py
+digestor/config.py
+digestor.egg-info/PKG-INFO
+digestor.egg-info/SOURCES.txt
+digestor.egg-info/dependency_links.txt
+digestor.egg-info/requires.txt
+digestor.egg-info/top_level.txt
+tests/test_config.py
