@@ -1,0 +1,6 @@
+matrix-nio[e2e]>=0.24
+apscheduler>=3.10
+
+[dev]
+pytest>=8
+pytest-asyncio>=0.23

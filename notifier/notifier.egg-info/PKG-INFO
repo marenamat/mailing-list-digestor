@@ -1,0 +1,9 @@
+Metadata-Version: 2.4
+Name: notifier
+Version: 0.1.0
+Requires-Python: >=3.12
+Requires-Dist: matrix-nio[e2e]>=0.24
+Requires-Dist: apscheduler>=3.10
+Provides-Extra: dev
+Requires-Dist: pytest>=8; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.23; extra == "dev"

@@ -1,0 +1,9 @@
+pyproject.toml
+notifier/__init__.py
+notifier/config.py
+notifier.egg-info/PKG-INFO
+notifier.egg-info/SOURCES.txt
+notifier.egg-info/dependency_links.txt
+notifier.egg-info/requires.txt
+notifier.egg-info/top_level.txt
+tests/test_config.py
