@@ -3,12 +3,16 @@ set -eu
 
 # ── Validate required env vars ────────────────────────────────────────────────
 : "${SMTP_RECIPIENT:?SMTP_RECIPIENT is required (e.g. digest@example.com)}"
+case "${SMTP_RECIPIENT}" in
+  *@*@*) echo "ERROR: SMTP_RECIPIENT contains multiple '@': ${SMTP_RECIPIENT}" >&2; exit 1 ;;
+  *@*) ;;
+  *) echo "ERROR: SMTP_RECIPIENT must be an email address (missing '@'): ${SMTP_RECIPIENT}" >&2; exit 1 ;;
+esac
 MAILDIR_PATH="${MAILDIR_PATH:-/data/maildir}"
 SMTP_HOSTNAME="${SMTP_HOSTNAME:-mail-receiver}"
 
 # ── Derive config values ──────────────────────────────────────────────────────
 DOMAIN="${SMTP_RECIPIENT#*@}"
-LOCAL="${SMTP_RECIPIENT%@*}"
 MAILDIR_PARENT="$(dirname "${MAILDIR_PATH}")"
 MAILDIR_LEAF="$(basename "${MAILDIR_PATH}")"
 
@@ -29,4 +33,5 @@ mkdir -p "${MAILDIR_PATH}/new" "${MAILDIR_PATH}/cur" "${MAILDIR_PATH}/tmp"
 chown -R 1000:1000 "${MAILDIR_PATH}"
 
 echo "mail-receiver: accepting mail for <${SMTP_RECIPIENT}> → ${MAILDIR_PATH}/new/"
+postfix check
 exec postfix start-fg
