@@ -22,6 +22,14 @@ services:
     networks:
       - internal
     restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        /bin/ollama serve &
+        echo "Waiting for ollama to start..."
+        until /bin/ollama list >/dev/null 2>&1; do sleep 1; done
+        /bin/ollama pull ${OLLAMA_MODEL:-gemma3:4b}
+        wait
 
   digestor:
     build: ./digestor
