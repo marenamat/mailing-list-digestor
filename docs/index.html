@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mailing-List Digestor</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2a2d3a;
+      --text: #e2e4ed;
+      --muted: #7b8099;
+      --accent: #5b7fff;
+      --accent-dim: #2d3f80;
+      --green: #3ecf8e;
+      --yellow: #f5c542;
+      --red: #f56565;
+      --mono: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 16px;
+      line-height: 1.65;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Layout ── */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 1.5rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    header .logo {
+      font-family: var(--mono);
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    header nav {
+      margin-left: auto;
+      display: flex;
+      gap: 1.5rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    header nav a { color: var(--muted); }
+    header nav a:hover { color: var(--text); text-decoration: none; }
+
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 4rem 2rem 6rem;
+    }
+
+    /* ── Hero ── */
+    .hero { text-align: center; margin-bottom: 4rem; }
+
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 1rem;
+    }
+
+    .hero h1 span { color: var(--accent); }
+
+    .hero p {
+      font-size: 1.15rem;
+      color: var(--muted);
+      max-width: 560px;
+      margin: 0 auto 2rem;
+    }
+
+    .hero-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.6rem 1.3rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.85; text-decoration: none; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+
+    /* ── Pipeline diagram ── */
+    .pipeline {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      flex-wrap: wrap;
+      margin: 3rem 0;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+    }
+
+    .pipe-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.7rem 1rem;
+      text-align: center;
+      min-width: 90px;
+    }
+
+    .pipe-box .label { color: var(--muted); font-size: 0.7rem; margin-bottom: 0.2rem; }
+    .pipe-box .name { color: var(--text); font-weight: 600; }
+
+    .pipe-arrow {
+      color: var(--border);
+      font-size: 1.2rem;
+      padding: 0 0.3rem;
+      flex-shrink: 0;
+    }
+
+    /* ── Section headings ── */
+    h2 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin: 3rem 0 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h3 { font-size: 1.05rem; font-weight: 600; margin: 1.8rem 0 0.6rem; color: var(--text); }
+
+    p { margin-bottom: 1rem; color: var(--muted); }
+    p strong { color: var(--text); }
+
+    /* ── Steps ── */
+    .steps { counter-reset: steps; }
+
+    .step {
+      display: flex;
+      gap: 1.2rem;
+      margin-bottom: 1.5rem;
+      align-items: flex-start;
+    }
+
+    .step-num {
+      counter-increment: steps;
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent-dim);
+      color: var(--accent);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-top: 0.15rem;
+    }
+
+    .step-num::before { content: counter(steps); }
+
+    .step-body h3 { margin-top: 0; }
+
+    /* ── Code blocks ── */
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem 1.2rem;
+      overflow-x: auto;
+      margin: 0.8rem 0 1rem;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.6;
+    }
+
+    code {
+      font-family: var(--mono);
+      font-size: 0.85em;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 0.1em 0.35em;
+    }
+
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      font-size: inherit;
+    }
+
+    .comment { color: var(--muted); }
+    .key { color: var(--accent); }
+    .val { color: var(--green); }
+
+    /* ── Table ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 1rem 0;
+    }
+
+    th {
+      text-align: left;
+      padding: 0.5rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: top;
+    }
+
+    td:first-child { font-family: var(--mono); font-size: 0.8rem; color: var(--accent); }
+
+    tr:last-child td { border-bottom: none; }
+
+    /* ── Service cards ── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem;
+    }
+
+    .card-icon { font-size: 1.4rem; margin-bottom: 0.5rem; }
+    .card h4 { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.3rem; font-family: var(--mono); }
+    .card p { font-size: 0.82rem; margin: 0; color: var(--muted); }
+
+    /* ── Note box ── */
+    .note {
+      background: color-mix(in srgb, var(--accent-dim) 40%, transparent);
+      border: 1px solid var(--accent-dim);
+      border-radius: 6px;
+      padding: 0.8rem 1rem;
+      font-size: 0.88rem;
+      color: var(--text);
+      margin: 1rem 0;
+    }
+
+    .note strong { color: var(--accent); }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      text-align: center;
+      padding: 2rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo">📬 mailing-list-digestor</span>
+  <nav>
+    <a href="#quickstart">Quick start</a>
+    <a href="#config">Config</a>
+    <a href="#deploy">Deploy</a>
+    <a href="https://github.com/jmq/mailing-list-digestor">GitHub</a>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ── Hero ── -->
+  <section class="hero">
+    <h1>Your mailing lists,<br><span>actually manageable</span></h1>
+    <p>Self-hosted SMTP receiver + AI triage + Matrix notifications.
+       Urgent threads surface immediately; everything else lands in a daily digest.</p>
+    <div class="hero-actions">
+      <a href="#quickstart" class="btn btn-primary">Get started</a>
+      <a href="https://github.com/jmq/mailing-list-digestor" class="btn btn-secondary">View on GitHub</a>
+    </div>
+  </section>
+
+  <!-- ── Pipeline ── -->
+  <div class="pipeline">
+    <div class="pipe-box"><div class="label">inbound</div><div class="name">SMTP</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box"><div class="label">deliver</div><div class="name">Postfix</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box"><div class="label">triage</div><div class="name">ollama</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box"><div class="label">classify</div><div class="name">Claude</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box"><div class="label">notify</div><div class="name">Matrix</div></div>
+  </div>
+
+  <!-- ── Services ── -->
+  <h2>Services</h2>
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon">📮</div>
+      <h4>mail-receiver</h4>
+      <p>Postfix accepts mail for one address, rejects everything else. Writes Maildir files.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">⚙️</div>
+      <h4>digestor</h4>
+      <p>Watches Maildir with inotify. Runs ollama triage, then Claude for urgent items. Stores everything in SQLite.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🤖</div>
+      <h4>notifier</h4>
+      <p>Matrix bot. Delivers urgent alerts immediately and daily digests on schedule. Accepts <code>!cancel</code> commands.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🧠</div>
+      <h4>ollama</h4>
+      <p>Runs <code>gemma3:4b</code> locally. Fast first-pass filter — only flagged messages go to Claude.</p>
+    </div>
+  </div>
+
+  <!-- ── Quick start ── -->
+  <h2 id="quickstart">Quick start</h2>
+
+  <div class="steps">
+
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <h3>Clone and copy templates</h3>
+        <pre><code>git clone https://github.com/jmq/mailing-list-digestor
+cd mailing-list-digestor
+cp .env.example .env
+cp config/context.md.example config/context.md
+cp config/lists.yaml.example config/lists.yaml</code></pre>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <h3>Fill in <code>.env</code></h3>
+        <pre><code><span class="comment"># Required</span>
+<span class="key">SMTP_RECIPIENT</span>=<span class="val">digest@yourdomain.example</span>
+<span class="key">SMTP_HOSTNAME</span>=<span class="val">mail.yourdomain.example</span>
+<span class="key">ANTHROPIC_API_KEY</span>=<span class="val">sk-ant-...</span>
+
+<span class="comment"># Matrix</span>
+<span class="key">MATRIX_HOMESERVER</span>=<span class="val">https://matrix.example.com</span>
+<span class="key">MATRIX_USERNAME</span>=<span class="val">@digestbot:example.com</span>
+<span class="key">MATRIX_PASSWORD</span>=<span class="val">your-bot-password</span>
+<span class="key">MATRIX_WHITELIST</span>=<span class="val">@you:example.com</span>
+<span class="key">MATRIX_ROOM_ID</span>=<span class="val">!roomid:example.com</span></code></pre>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <h3>Describe your interests in <code>config/context.md</code></h3>
+        <p>Plain markdown. Tell the digestor which working groups you follow, what counts as urgent, and what to ignore. Re-read on every processing cycle — edit any time without restarting.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <h3>Map lists to working groups in <code>config/lists.yaml</code></h3>
+        <pre><code><span class="key">working_groups</span>:
+  <span class="key">QUIC</span>:
+    - <span class="val">quic@ietf.org</span>
+  <span class="key">TLS</span>:
+    - <span class="val">tls@ietf.org</span></code></pre>
+        <p>Daily digests are grouped by these names.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <h3>Start everything</h3>
+        <pre><code>podman-compose up -d</code></pre>
+        <p>On first start, the ollama container pulls <code>gemma3:4b</code> — this takes a few minutes. After that, subscribe <code>$SMTP_RECIPIENT</code> to your mailing lists. Subscription confirmations arrive as Matrix notifications.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Config reference ── -->
+  <h2 id="config">Configuration reference</h2>
+
+  <h3>Environment variables</h3>
+  <table>
+    <tr><th>Variable</th><th>Default</th><th>Description</th></tr>
+    <tr><td>SMTP_RECIPIENT</td><td>—</td><td>Address to accept mail for</td></tr>
+    <tr><td>SMTP_HOSTNAME</td><td>mail-receiver</td><td>Postfix hostname / SMTP banner</td></tr>
+    <tr><td>SMTP_PORT</td><td>25</td><td>Host port mapped to container port 25</td></tr>
+    <tr><td>ANTHROPIC_API_KEY</td><td>—</td><td>Anthropic API key</td></tr>
+    <tr><td>OLLAMA_MODEL</td><td>gemma3:4b</td><td>Local triage model name</td></tr>
+    <tr><td>DIGEST_TIME</td><td>07:00</td><td>Daily digest time (HH:MM, container TZ)</td></tr>
+    <tr><td>MATRIX_HOMESERVER</td><td>—</td><td>Matrix homeserver URL</td></tr>
+    <tr><td>MATRIX_USERNAME</td><td>—</td><td>Bot Matrix ID</td></tr>
+    <tr><td>MATRIX_PASSWORD</td><td>—</td><td>Bot password</td></tr>
+    <tr><td>MATRIX_WHITELIST</td><td>—</td><td>Comma-separated Matrix IDs for the bot</td></tr>
+    <tr><td>MATRIX_ROOM_ID</td><td>—</td><td>Room to post notifications to</td></tr>
+    <tr><td>POLL_INTERVAL_S</td><td>30</td><td>Notifier poll interval in seconds</td></tr>
+  </table>
+
+  <h3>Matrix bot commands</h3>
+  <table>
+    <tr><th>Command</th><th>Effect</th></tr>
+    <tr><td>!cancel &lt;id&gt;</td><td>Cancel a specific repeating notification</td></tr>
+    <tr><td>!cancel-all</td><td>Cancel all active repeating notifications</td></tr>
+    <tr><td><em>anything else</em></td><td>Stored as a reply; digestor updates context.md next cycle</td></tr>
+  </table>
+
+  <!-- ── Deploy ── -->
+  <h2 id="deploy">Deployment</h2>
+
+  <h3>Requirements</h3>
+  <p>A Linux host with:</p>
+  <ul style="color:var(--muted); padding-left:1.5rem; margin-bottom:1rem;">
+    <li>Podman 5+ (rootless) with cgroups v2 mounted</li>
+    <li>podman-compose</li>
+    <li>fuse-overlayfs (for overlay storage driver)</li>
+    <li>Port 25 reachable from the internet, or an MX forwarder</li>
+  </ul>
+
+  <div class="note">
+    <strong>cgroups note:</strong> On Alpine/OpenRC, cgroups aren't mounted automatically.
+    Run <code>sudo rc-update add cgroups default &amp;&amp; sudo rc-service cgroups start</code> once.
+  </div>
+
+  <h3>systemd user service</h3>
+  <p>A unit file is included at <code>~/.config/systemd/user/mailing-list-digestor.service</code>:</p>
+  <pre><code>systemctl --user daemon-reload
+systemctl --user enable --now mailing-list-digestor
+loginctl enable-linger   # start at boot without a session</code></pre>
+
+  <h3>Health check</h3>
+  <pre><code>podman exec $(podman ps -qf name=digestor) \
+  curl -s http://localhost:8080/healthz</code></pre>
+  <p>Returns <code>{"status": "ok", "db": "ok"}</code>.</p>
+
+  <h3>Smoke test</h3>
+  <p>Tests the mail delivery path without any AI credentials:</p>
+  <pre><code>SMTP_RECIPIENT=smoketest@mail-receiver.test ./smoke_test.sh</code></pre>
+
+</main>
+
+<footer>
+  mailing-list-digestor — MIT licence —
+  <a href="https://github.com/jmq/mailing-list-digestor">github.com/jmq/mailing-list-digestor</a>
+</footer>
+
+</body>
+</html>
