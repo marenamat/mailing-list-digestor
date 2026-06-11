@@ -7,7 +7,7 @@ name = "notifier"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
-    "matrix-nio>=0.24",
+    "matrix-nio[e2e]>=0.24",
     "apscheduler>=3.10",
 ]
 

@@ -27,13 +27,13 @@ This service must run separated from others and communicate only one-way with th
 
 ### Implementation
 
-- Language: **Rust**
-- SMTP listener crate: `mailin-embedded` (minimal, no relay, single-address filter)
-- Accepts mail only for the configured recipient; rejects everything else at SMTP level
-- Saves each message as a `.eml` file into `/data/maildir/new/` (Maildir convention)
-- No outbound network access; container runs without any egress route
-- Base image: `gcr.io/distroless/static` (scratch-level size, no shell)
-- Configuration via environment variables: `SMTP_LISTEN_ADDR`, `SMTP_RECIPIENT`
+- Software: **Postfix 3.7** (Alpine 3.19 package — no custom SMTP code)
+- Accepts mail only for the configured recipient via virtual mailbox map; rejects all other domains at SMTP level (554)
+- Delivers each message into `/data/maildir/new/` (Maildir format, atomic `tmp/` → `new/` rename)
+- No outbound network access; `default_transport = error` and `relay_domains =` disable all relay
+- Base image: `alpine:3.19`; UID 1000 (`mailuser`) shared with digestor container
+- Logs to stdout via `maillog_file = /dev/stdout` (Postfix 3.4+ feature)
+- Configuration via environment variables: `SMTP_RECIPIENT`, `SMTP_HOSTNAME`, `MAILDIR_PATH`
 
 ## Digestor
 
