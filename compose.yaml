@@ -1,0 +1,74 @@
+version: "3.8"
+
+services:
+  mail-receiver:
+    build: ./mail-receiver
+    ports:
+      - "${SMTP_PORT:-25}:25"
+    environment:
+      SMTP_RECIPIENT: "${SMTP_RECIPIENT}"
+      SMTP_HOSTNAME: "${SMTP_HOSTNAME:-mail-receiver}"
+      MAILDIR_PATH: /data/maildir
+    volumes:
+      - maildir:/data
+    networks:
+      - smtp-ingress
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama-models:/root/.ollama
+    networks:
+      - internal
+    restart: unless-stopped
+
+  digestor:
+    build: ./digestor
+    environment:
+      MAILDIR_PATH: /data/maildir
+      DB_PATH: /data/digestor.db
+      CONTEXT_PATH: /config/context.md
+      LISTS_PATH: /config/lists.yaml
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: "${OLLAMA_MODEL:-gemma3:4b}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
+      DIGEST_TIME: "${DIGEST_TIME:-07:00}"
+    volumes:
+      - maildir:/data/maildir:ro
+      - db:/data
+      - config:/config:ro
+    networks:
+      - internal
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+  notifier:
+    build: ./notifier
+    environment:
+      DB_PATH: /data/digestor.db
+      MATRIX_HOMESERVER: "${MATRIX_HOMESERVER}"
+      MATRIX_USERNAME: "${MATRIX_USERNAME}"
+      MATRIX_PASSWORD: "${MATRIX_PASSWORD}"
+      MATRIX_WHITELIST: "${MATRIX_WHITELIST}"
+      MATRIX_ROOM_ID: "${MATRIX_ROOM_ID:-}"
+      POLL_INTERVAL_S: "${POLL_INTERVAL_S:-30}"
+    volumes:
+      - db:/data
+    networks:
+      - internal
+    depends_on:
+      - digestor
+    restart: unless-stopped
+
+volumes:
+  maildir:
+  db:
+  ollama-models:
+  config:
+
+networks:
+  smtp-ingress:
+  internal:
+    internal: true
