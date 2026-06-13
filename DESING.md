@@ -137,6 +137,24 @@ Networks:
 
 Secrets and credentials go in a `.env` file (not committed to git); an `.env.example` is committed and documents all required variables.
 
+## Web tracker
+
+Users can track arbitrary URLs from the Matrix bot. The `trackings` table in `digestor.db` is written by the notifier (bot commands) and read by the digestor (scheduled polling).
+
+Bot commands:
+- `!track <interval> <url> [for <description>]` — creates a tracking row; interval in `hourly`, `daily`, `weekly`, `Nh`, `Nd`, `Nw` format
+- `!untrack <id>` — soft-deletes a tracking by setting `cancelled_at`
+- `!list` — shows active trackings and pending notification count
+
+The digestor polls all due trackings every 5 minutes. For each due row:
+1. Fetches the URL with Playwright (headless Chromium, waits for `networkidle`)
+2. Hashes the rendered `document.body.innerText` (SHA-256)
+3. If hash unchanged: updates `last_checked_at` only
+4. If no prior content (first fetch): stores baseline, queues a "Now tracking" notification, no LLM call
+5. If content changed: calls Claude with the previous and current text (truncated to 4 000 chars each), queues a "Change detected" notification with the summary, logs token usage
+
+Rendered content is stored truncated to 100 000 characters in `trackings.last_content_text`.
+
 ## Notifier
 
 The notifier is a Matrix user. The server, username and password shall be

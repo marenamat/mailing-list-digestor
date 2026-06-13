@@ -432,10 +432,14 @@ cp config/lists.yaml.example config/lists.yaml</code></pre>
   <h3>Matrix bot commands</h3>
   <table>
     <tr><th>Command</th><th>Effect</th></tr>
+    <tr><td><code>!track &lt;interval&gt; &lt;url&gt; [for &lt;description&gt;]</code></td><td>Track a URL; intervals: <code>hourly</code>, <code>daily</code>, <code>weekly</code>, <code>Nh</code>, <code>Nd</code>, <code>Nw</code></td></tr>
+    <tr><td><code>!untrack &lt;id&gt;</code></td><td>Stop tracking a URL by its ID (shown in <code>!list</code>)</td></tr>
+    <tr><td><code>!list</code></td><td>List active trackings and pending notification count</td></tr>
     <tr><td>!cancel &lt;id&gt;</td><td>Cancel a specific repeating notification</td></tr>
     <tr><td>!cancel-all</td><td>Cancel all active repeating notifications</td></tr>
     <tr><td><em>anything else</em></td><td>Stored as a reply; digestor updates context.md next cycle</td></tr>
   </table>
+  <p>The tracker always renders pages with headless Chromium and only calls Claude when the text content changes.</p>
 
   <!-- ── Deploy ── -->
   <h2 id="deploy">Deployment</h2>

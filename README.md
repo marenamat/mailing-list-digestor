@@ -104,9 +104,14 @@ Send these to the bot from your whitelisted account:
 
 | Command | Effect |
 |---|---|
+| `!track <interval> <url> [for <description>]` | Start tracking a URL; interval: `hourly`, `daily`, `weekly`, `Nh`, `Nd`, `Nw` |
+| `!untrack <id>` | Stop tracking a URL (get `<id>` from `!list`) |
+| `!list` | List active trackings and count of pending notifications |
 | `!cancel <id>` | Cancel a specific repeating notification |
 | `!cancel-all` | Cancel all active repeating notifications |
 | Any other message | Stored as a reply; digestor updates `context.md` on the next cycle |
+
+The tracker always fetches via headless Chromium and only calls Claude when the rendered page text changes.
 
 ## Health check
 
