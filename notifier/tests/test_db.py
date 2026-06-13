@@ -1,6 +1,16 @@
 import sqlite3, pytest
 from datetime import datetime, timezone
-from notifier.db import fetch_pending, mark_sent, cancel_notif, cancel_all, insert_reply, init_test_db
+from notifier.db import (
+    fetch_pending,
+    mark_sent,
+    cancel_notif,
+    cancel_all,
+    insert_reply,
+    init_test_db,
+    insert_tracking,
+    cancel_tracking,
+    fetch_active_trackings,
+)
 
 
 def test_fetch_pending_returns_due_notifications(tmp_path):
@@ -78,9 +88,6 @@ def test_insert_reply(tmp_path):
     row = conn.execute("SELECT content, matrix_sender FROM replies").fetchone()
     assert row[0] == "I agree with this"
     assert row[1] == "@alice:example.com"
-
-
-from notifier.db import insert_tracking, cancel_tracking, fetch_active_trackings
 
 
 def test_insert_tracking_returns_id(tmp_path):
