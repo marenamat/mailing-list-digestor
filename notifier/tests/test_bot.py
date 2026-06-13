@@ -93,3 +93,103 @@ async def test_unknown_sender_ignored(bot, db):
     mock_send.assert_not_called()
     row = db.execute("SELECT * FROM replies").fetchone()
     assert row is None
+
+
+# --- !track / !untrack / !list tests ---
+
+async def test_track_command_inserts_tracking(bot, db):
+    with patch.object(bot, "send_notification", new_callable=AsyncMock) as mock_send:
+        await bot.handle_message("@alice:example.com", "!track daily https://example.com/ for venue")
+    row = db.execute("SELECT * FROM trackings WHERE url='https://example.com/'").fetchone()
+    assert row is not None
+    assert row["interval_h"] == 24.0
+    assert row["label"] == "venue"
+    mock_send.assert_called_once()
+    assert "[" in mock_send.call_args[0][0]  # reply contains tracking ID
+
+
+async def test_track_command_without_label(bot, db):
+    with patch.object(bot, "send_notification", new_callable=AsyncMock):
+        await bot.handle_message("@alice:example.com", "!track 6h https://rss.example.com/feed")
+    row = db.execute("SELECT * FROM trackings WHERE url='https://rss.example.com/feed'").fetchone()
+    assert row is not None
+    assert row["interval_h"] == 6.0
+    assert row["label"] is None
+
+
+async def test_track_command_bad_interval(bot, db):
+    with patch.object(bot, "send_notification", new_callable=AsyncMock) as mock_send:
+        await bot.handle_message("@alice:example.com", "!track badinterval https://example.com/")
+    assert db.execute("SELECT COUNT(*) FROM trackings").fetchone()[0] == 0
+    assert "interval" in mock_send.call_args[0][0].lower()
+
+
+async def test_track_command_missing_url(bot, db):
+    with patch.object(bot, "send_notification", new_callable=AsyncMock) as mock_send:
+        await bot.handle_message("@alice:example.com", "!track daily")
+    assert db.execute("SELECT COUNT(*) FROM trackings").fetchone()[0] == 0
+    assert "Usage" in mock_send.call_args[0][0]
+
+
+async def test_untrack_command_cancels_tracking(bot, db):
+    from notifier.db import insert_tracking
+    tid = insert_tracking(db, "https://example.com", "test", 24.0)
+
+    with patch.object(bot, "send_notification", new_callable=AsyncMock) as mock_send:
+        await bot.handle_message("@alice:example.com", f"!untrack {tid}")
+
+    row = db.execute("SELECT cancelled_at FROM trackings WHERE id=?", (tid,)).fetchone()
+    assert row[0] is not None
+    assert str(tid) in mock_send.call_args[0][0]
+
+
+async def test_untrack_command_unknown_id(bot, db):
+    with patch.object(bot, "send_notification", new_callable=AsyncMock) as mock_send:
+        await bot.handle_message("@alice:example.com", "!untrack 9999")
+    assert "not found" in mock_send.call_args[0][0]
+
+
+async def test_untrack_command_bad_id(bot, db):
+    with patch.object(bot, "send_notification", new_callable=AsyncMock) as mock_send:
+        await bot.handle_message("@alice:example.com", "!untrack abc")
+    assert "Usage" in mock_send.call_args[0][0]
+
+
+async def test_list_command_shows_trackings(bot, db):
+    from notifier.db import insert_tracking
+    insert_tracking(db, "https://example.com", "the venue", 24.0)
+    insert_tracking(db, "https://rss.example.com/", None, 6.0)
+
+    with patch.object(bot, "send_notification", new_callable=AsyncMock) as mock_send:
+        await bot.handle_message("@alice:example.com", "!list")
+
+    reply = mock_send.call_args[0][0]
+    assert "https://example.com" in reply
+    assert "https://rss.example.com/" in reply
+    assert "Pending notifications" in reply
+
+
+async def test_list_command_empty(bot, db):
+    with patch.object(bot, "send_notification", new_callable=AsyncMock) as mock_send:
+        await bot.handle_message("@alice:example.com", "!list")
+
+    reply = mock_send.call_args[0][0]
+    assert "No active trackings" in reply
+    assert "Pending notifications" in reply
+
+
+async def test_parse_interval_variants(bot, db):
+    cases = [
+        ("hourly", 1.0, "https://a.com"),
+        ("daily", 24.0, "https://b.com"),
+        ("weekly", 168.0, "https://c.com"),
+        ("12h", 12.0, "https://d.com"),
+        ("2d", 48.0, "https://e.com"),
+        ("1w", 168.0, "https://f.com"),
+    ]
+    for interval_str, expected_h, url in cases:
+        with patch.object(bot, "send_notification", new_callable=AsyncMock):
+            await bot.handle_message("@alice:example.com", f"!track {interval_str} {url}")
+        row = db.execute("SELECT interval_h FROM trackings WHERE url=?", (url,)).fetchone()
+        assert row is not None, f"no row for {interval_str}"
+        assert row[0] == expected_h, f"{interval_str} → expected {expected_h}, got {row[0]}"
