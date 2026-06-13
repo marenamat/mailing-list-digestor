@@ -1,9 +1,12 @@
 import logging
 import sqlite3
 from datetime import datetime, timezone, date
+
 from apscheduler.schedulers.background import BackgroundScheduler
+
 from digestor.config import Config
 from digestor.digest import generate_digest
+from digestor.tracker import check_tracking
 
 log = logging.getLogger(__name__)
 
@@ -49,6 +52,20 @@ def _run_daily_digest(cfg: Config, db: sqlite3.Connection) -> None:
     log.info("Daily digest complete")
 
 
+def _poll_trackings(cfg: Config, db: sqlite3.Connection) -> None:
+    rows = db.execute(
+        """SELECT * FROM trackings
+           WHERE cancelled_at IS NULL
+             AND (last_checked_at IS NULL
+                  OR datetime(last_checked_at, '+' || CAST(ROUND(interval_h * 60) AS INTEGER) || ' minutes') <= datetime('now'))"""
+    ).fetchall()
+    for row in rows:
+        try:
+            check_tracking(row, cfg, db)
+        except Exception:
+            log.exception("Tracking check failed for %s", row["url"])
+
+
 def build_scheduler(cfg: Config, db: sqlite3.Connection) -> BackgroundScheduler:
     hour, minute = (int(x) for x in cfg.digest_time.split(":"))
     scheduler = BackgroundScheduler()
@@ -59,5 +76,12 @@ def build_scheduler(cfg: Config, db: sqlite3.Connection) -> BackgroundScheduler:
         minute=minute,
         args=[cfg, db],
         id="daily_digest",
+    )
+    scheduler.add_job(
+        _poll_trackings,
+        "interval",
+        minutes=5,
+        args=[cfg, db],
+        id="poll_trackings",
     )
     return scheduler
