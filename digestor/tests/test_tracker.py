@@ -166,3 +166,4 @@ def test_claude_error_sends_unavailable_summary(db, cfg):
 
     notif = db.execute("SELECT content FROM notifications").fetchone()
     assert "summary unavailable" in notif["content"]
+    assert db.execute("SELECT COUNT(*) FROM token_usage").fetchone()[0] == 0

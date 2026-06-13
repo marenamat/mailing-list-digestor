@@ -68,10 +68,11 @@ def check_tracking(row: sqlite3.Row, cfg: Config, db: sqlite3.Connection) -> Non
         "INSERT INTO notifications(type, content, status) VALUES(?,?,?)",
         ("tracking", f"**Change detected: {label}**\n{url}\n\n{summary}", "pending"),
     )
-    db.execute(
-        "INSERT INTO token_usage(model, input_tokens, output_tokens, purpose) VALUES(?,?,?,?)",
-        ("claude-sonnet-4-6", in_tok, out_tok, f"tracking:{url}"),
-    )
+    if in_tok or out_tok:
+        db.execute(
+            "INSERT INTO token_usage(model, input_tokens, output_tokens, purpose) VALUES(?,?,?,?)",
+            ("claude-sonnet-4-6", in_tok, out_tok, f"tracking:{url}"),
+        )
     db.commit()
 
 
