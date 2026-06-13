@@ -78,3 +78,48 @@ def test_insert_reply(tmp_path):
     row = conn.execute("SELECT content, matrix_sender FROM replies").fetchone()
     assert row[0] == "I agree with this"
     assert row[1] == "@alice:example.com"
+
+
+from notifier.db import insert_tracking, cancel_tracking, fetch_active_trackings
+
+
+def test_insert_tracking_returns_id(tmp_path):
+    conn = init_test_db(str(tmp_path / "test.db"))
+    tid = insert_tracking(conn, "https://example.com", "venue", 24.0)
+    assert isinstance(tid, int)
+    assert tid > 0
+
+
+def test_insert_tracking_no_label(tmp_path):
+    conn = init_test_db(str(tmp_path / "test.db"))
+    tid = insert_tracking(conn, "https://example.com", None, 6.0)
+    row = conn.execute("SELECT label FROM trackings WHERE id=?", (tid,)).fetchone()
+    assert row[0] is None
+
+
+def test_cancel_tracking_sets_cancelled_at(tmp_path):
+    conn = init_test_db(str(tmp_path / "test.db"))
+    tid = insert_tracking(conn, "https://example.com", "test", 24.0)
+    cancel_tracking(conn, tid)
+    row = conn.execute("SELECT cancelled_at FROM trackings WHERE id=?", (tid,)).fetchone()
+    assert row[0] is not None
+
+
+def test_fetch_active_trackings_excludes_cancelled(tmp_path):
+    conn = init_test_db(str(tmp_path / "test.db"))
+    t1 = insert_tracking(conn, "https://a.com", "a", 24.0)
+    t2 = insert_tracking(conn, "https://b.com", "b", 6.0)
+    cancel_tracking(conn, t2)
+    rows = fetch_active_trackings(conn)
+    ids = [r["id"] for r in rows]
+    assert t1 in ids
+    assert t2 not in ids
+
+
+def test_fetch_active_trackings_ordered_by_id(tmp_path):
+    conn = init_test_db(str(tmp_path / "test.db"))
+    t1 = insert_tracking(conn, "https://a.com", "a", 24.0)
+    t2 = insert_tracking(conn, "https://b.com", "b", 6.0)
+    rows = fetch_active_trackings(conn)
+    assert rows[0]["id"] == t1
+    assert rows[1]["id"] == t2

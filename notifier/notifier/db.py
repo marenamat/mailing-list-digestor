@@ -21,6 +21,19 @@ CREATE TABLE IF NOT EXISTS replies (
     content       TEXT NOT NULL,
     applied       INTEGER DEFAULT 0
 );
+
+CREATE TABLE IF NOT EXISTS trackings (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    url               TEXT NOT NULL,
+    label             TEXT,
+    interval_h        REAL NOT NULL,
+    last_content_hash TEXT,
+    last_content_text TEXT,
+    last_checked_at   TEXT,
+    last_changed_at   TEXT,
+    created_at        TEXT DEFAULT (datetime('now')),
+    cancelled_at      TEXT
+);
 """
 
 
@@ -78,3 +91,27 @@ def insert_reply(conn: sqlite3.Connection, sender: str, content: str) -> None:
         "INSERT INTO replies(matrix_sender, content) VALUES(?,?)", (sender, content)
     )
     conn.commit()
+
+
+def insert_tracking(conn: sqlite3.Connection, url: str, label: str | None, interval_h: float) -> int:
+    cur = conn.execute(
+        "INSERT INTO trackings(url, label, interval_h) VALUES(?,?,?)",
+        (url, label, interval_h),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def cancel_tracking(conn: sqlite3.Connection, tracking_id: int) -> None:
+    now = datetime.now(timezone.utc).isoformat()
+    conn.execute(
+        "UPDATE trackings SET cancelled_at=? WHERE id=?",
+        (now, tracking_id),
+    )
+    conn.commit()
+
+
+def fetch_active_trackings(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    return conn.execute(
+        "SELECT * FROM trackings WHERE cancelled_at IS NULL ORDER BY id"
+    ).fetchall()

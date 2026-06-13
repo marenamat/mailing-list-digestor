@@ -6,7 +6,7 @@ def test_init_creates_all_tables(tmp_path):
     tables = {r[0] for r in conn.execute(
         "SELECT name FROM sqlite_master WHERE type='table'"
     ).fetchall()}
-    assert tables >= {"emails", "digests", "token_usage", "notifications", "replies"}
+    assert tables >= {"emails", "digests", "token_usage", "notifications", "replies", "trackings"}
 
 def test_fts5_table_exists(tmp_path):
     conn = init_db(str(tmp_path / "test.db"))

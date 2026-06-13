@@ -60,6 +60,19 @@ CREATE VIRTUAL TABLE IF NOT EXISTS emails_fts USING fts5(
     subject, body_text,
     content=emails, content_rowid=id
 );
+
+CREATE TABLE IF NOT EXISTS trackings (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    url               TEXT NOT NULL,
+    label             TEXT,
+    interval_h        REAL NOT NULL,
+    last_content_hash TEXT,
+    last_content_text TEXT,
+    last_checked_at   TEXT,
+    last_changed_at   TEXT,
+    created_at        TEXT DEFAULT (datetime('now')),
+    cancelled_at      TEXT
+);
 """
 
 def init_db(path: str) -> sqlite3.Connection:
