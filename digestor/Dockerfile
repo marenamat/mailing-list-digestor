@@ -4,6 +4,8 @@ WORKDIR /app
 
 COPY pyproject.toml .
 RUN pip install --no-cache-dir -e .
+RUN playwright install chromium
+RUN playwright install-deps chromium
 
 COPY digestor ./digestor
 
