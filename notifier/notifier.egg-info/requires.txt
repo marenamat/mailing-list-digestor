@@ -1,4 +1,4 @@
-matrix-nio[e2e]>=0.24
+matrix-nio>=0.24
 apscheduler>=3.10
 
 [dev]
