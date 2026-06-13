@@ -95,3 +95,19 @@ def test_poll_trackings_continues_after_error(db, cfg):
         _poll_trackings(cfg, db)
 
     assert call_count == 2
+
+
+def test_poll_trackings_calls_check_for_overdue_row(db, cfg):
+    from datetime import datetime, timezone, timedelta
+    past = (datetime.now(timezone.utc) - timedelta(hours=25)).isoformat()
+    db.execute(
+        "INSERT INTO trackings(url, label, interval_h, last_checked_at) VALUES(?,?,?,?)",
+        ("https://example.com", "test", 24.0, past),
+    )
+    db.commit()
+
+    with patch("digestor.scheduler.check_tracking") as mock_check:
+        from digestor.scheduler import _poll_trackings
+        _poll_trackings(cfg, db)
+
+    mock_check.assert_called_once()
