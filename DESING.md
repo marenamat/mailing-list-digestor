@@ -1,4 +1,4 @@
-# Mailing-list Digestor
+# Grinder
 
 The tool will directly receive various mailing-lists.
 It should automatically process the mailbox and notify about important events.

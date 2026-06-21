@@ -1,4 +1,4 @@
-# Mailing-List Digestor
+# Grinder
 
 A self-hosted tool that receives IETF mailing-list emails via SMTP, triages them with a local LLM, classifies urgent messages with Claude, and sends a daily digest plus immediate alerts to a Matrix room.
 
